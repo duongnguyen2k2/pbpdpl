@@ -1,0 +1,180 @@
+@model List<API.Areas.Admin.Models.FAQ.FAQ>
+@using Microsoft.AspNetCore.Http;
+@using Newtonsoft.Json;
+@using Microsoft.AspNetCore.Mvc.Localization
+@inject IViewLocalizer Localizer
+
+@{
+    // Thông tin cơ quan để gán SEO và breadcrumbs
+    string domain = "";
+    if (Context.Request.IsHttps)
+    {
+        domain = "https://" + Context.Request.Host;
+    }
+    else
+    {
+        domain = "http://" + Context.Request.Host;
+    }
+
+    string strThongTinCoQuan = Context.Session.GetString("ThongTinCoQuan");
+    API.Areas.Admin.Models.DMCoQuan.DMCoQuan itemCoQuan = new API.Areas.Admin.Models.DMCoQuan.DMCoQuan();
+    if (!string.IsNullOrEmpty(strThongTinCoQuan))
+    {
+        itemCoQuan = JsonConvert.DeserializeObject<API.Areas.Admin.Models.DMCoQuan.DMCoQuan>(strThongTinCoQuan);
+    }
+
+    ViewData["Title"] = "Câu hỏi thường gặp - " + itemCoQuan.Title;
+    ViewData["Description"] = "Tổng hợp các câu hỏi thường gặp và giải đáp chi tiết.";
+    ViewData["Keywords"] = "FAQ, Câu hỏi thường gặp, giải đáp";
+    ViewData["Url"] = domain + Context.Request.Path;
+    ViewData["Images"] = domain + "/avatar_hoi_dap.jpg?v=" + DateTime.Now.ToString("yyyyMMddhh");
+    ViewData["Alias"] = "Câu hỏi thường gặp";
+    ViewData["Type"] = "article";
+}
+
+<div class="row">
+    <div class="col-lg-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb bg-transparent px-0 mb-2">
+                <li class="breadcrumb-item">
+                    <a href="/">Trang chủ</a>
+                </li>
+                <li class="breadcrumb-item active" aria-current="page">
+                    Câu hỏi thường gặp
+                </li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row mb-4 align-items-stretch">
+    <div class="col-lg-4 col-md-5 mb-3 mb-md-0">
+        <div class="white-box h-100 d-flex flex-column justify-content-between faq-sidebar">
+            <div>
+                <h2 class="h4 font-weight-bold mb-3 text-primary">
+                    <i class="fas fa-question-circle text-success mr-2"></i>
+                    Câu hỏi thường gặp
+                </h2>
+                <p class="text-muted mb-3">
+                    Tổng hợp những câu hỏi hay gặp và phần giải đáp chi tiết, giúp bạn tra cứu thông tin nhanh chóng.
+                </p>
+            </div>
+            <div class="mt-2 text-center">
+                <img src="/images/FAQ.webp?v=@DateTime.Now.ToString("yyyyMMddhh")"
+                     alt="Câu hỏi thường gặp"
+                     class="img-fluid d-none d-md-inline-block" />
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-8 col-md-7">
+        <div class="white-box h-100">
+            @if (Model == null || !Model.Any())
+            {
+                <p class="text-center text-muted mb-0">Chưa có câu hỏi nào được cấu hình.</p>
+            }
+            else
+            {
+                <div class="form-group mb-3">
+                    <div class="input-group">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text bg-white">
+                                <i class="fas fa-search"></i>
+                            </span>
+                        </div>
+                        <input type="text"
+                               id="faq-search"
+                               class="form-control"
+                               placeholder="Nhập từ khóa tìm kiếm câu hỏi..." />
+                    </div>
+                    <small class="form-text text-muted">
+                        Nhập một vài từ khóa để lọc nhanh câu hỏi bên dưới.
+                    </small>
+                </div>
+
+                <div class="faq-wrapper">
+                    <div class="accordion" id="faqAccordion">
+                        @for (int i = 0; i < Model.Count; i++)
+                        {
+                            var item = Model[i];
+                            var headingId = $"heading_{i}";
+                            var collapseId = $"faq_{i}";
+                            var isFirst = i == 0;
+
+                            <div class="card faq-item" data-title="@item.Title?.ToLower()">
+                                <div class="card-header" id="@headingId">
+                                    <h5 class="mb-0">
+                                        <button class="btn btn-link faq-toggle" type="button"
+                                                data-toggle="collapse"
+                                                data-target="#@collapseId"
+                                                aria-expanded="@(isFirst ? "true" : "false")"
+                                                aria-controls="@collapseId">
+                                            <span class="badge badge-success mr-2">@(i + 1)</span>
+                                            @item.Title
+                                            <span class="faq-toggle-icon ml-2">
+                                                <i class="fa fa-chevron-up icon-up @(isFirst ? "" : "d-none")"></i>
+                                                <i class="fa fa-chevron-down icon-down @(isFirst ? "d-none" : "")"></i>
+                                            </span>
+                                        </button>
+                                    </h5>
+                                </div>
+                                <div id="@collapseId"
+                                     class="collapse @(isFirst ? "show" : "")"
+                                     aria-labelledby="@headingId"
+                                     data-parent="#faqAccordion">
+                                    <div class="card-body">
+                                        @if (!string.IsNullOrEmpty(item.Description))
+                                        {
+                                            <p>@Html.Raw(item.Description)</p>
+                                        }
+                                        else
+                                        {
+                                            <p class="text-muted mb-0">Đang cập nhật nội dung.</p>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+<script>
+    (function () {
+        var input = document.getElementById('faq-search');
+        if (input) {
+            input.addEventListener('keyup', function () {
+                var keyword = this.value.toLowerCase();
+                var items = document.querySelectorAll('.faq-item');
+
+                items.forEach(function (item) {
+                    var title = item.getAttribute('data-title') || '';
+                    if (!keyword || title.indexOf(keyword) !== -1) {
+                        item.style.display = '';
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+            });
+        }
+
+        if (window.jQuery) {
+            var accordion = $('#faqAccordion');
+            if (accordion.length) {
+                accordion.on('show.bs.collapse', function (event) {
+                    var button = $(event.target).prev('.card-header').find('.faq-toggle');
+                    button.find('.icon-up').removeClass('d-none');
+                    button.find('.icon-down').addClass('d-none');
+                });
+
+                accordion.on('hide.bs.collapse', function (event) {
+                    var button = $(event.target).prev('.card-header').find('.faq-toggle');
+                    button.find('.icon-up').addClass('d-none');
+                    button.find('.icon-down').removeClass('d-none');
+                });
+            }
+        }
+    })();
+</script>

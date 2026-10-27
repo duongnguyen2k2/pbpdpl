@@ -1,0 +1,194 @@
+﻿@model API.Areas.Admin.Models.USUsers.AccountLogin
+@inject IConfiguration Configuration;
+@using Microsoft.AspNetCore.Http.Features
+@using Microsoft.AspNetCore.Http;
+@using Microsoft.Extensions.Configuration
+@using Newtonsoft.Json;
+@using API.Areas.Admin.Models.DMCoQuan;
+@{
+    var consentFeature = Context.Features.Get<ITrackingConsentFeature>();
+    var showBanner = !consentFeature?.CanTrack ?? false;
+    var cookieString = consentFeature?.CreateConsentCookie();
+    DMCoQuan ItemCoQuan = JsonConvert.DeserializeObject<DMCoQuan>(Context.Session.GetString("ThongTinCoQuan"));
+    var ItemConfig = API.Areas.Admin.Models.SYSParams.SYSParamsService.GetItemConfigByHome(ItemCoQuan,Context);
+    Layout = "_layoutLogin";
+    ViewData["Title"] = "Đăng nhập";
+
+    
+    var flagCaptCha = Configuration["flagCaptCha"] ?? "0";
+    var recaptchaSiteKey = flagCaptCha == "1" ? Configuration["RecaptchaSettings:SiteKey"] : "";
+    var useRecaptcha = flagCaptCha == "1" && !string.IsNullOrEmpty(recaptchaSiteKey);
+
+   
+    var formStartTime = DateTime.Now.Ticks;
+}
+
+
+@if (showBanner)
+{
+    <div id="mycookie" style="display:none;" data-cookie-string="@cookieString"></div>
+    <script>
+        document.cookie = document.getElementById("mycookie").dataset.cookieString;
+        console.log(document.getElementById("mycookie").dataset.cookieString);
+    </script>
+}
+
+<div class="container h-100">
+    <div class="d-flex justify-content-center h-100">
+
+        <div class="user_card">
+            
+            <div class="logo">
+                @if (ItemCoQuan.FolderUpload == "tinhuy")
+                {
+                    <img src="~/TemplatesAdmin/Default/images/logo-tinhuy.png" />
+                }
+                else{
+                    <img src="~/TemplatesAdmin/Default/images/logo-vnpt.png" />                    
+                }
+
+            </div>
+            <div class="text-center">
+                <h5 class="head">ĐĂNG NHẬP HỆ THỐNG</h5>
+            </div>
+
+            <div class="d-flex justify-content-center form_container">
+
+                <form asp-controller="Account" asp-action="Login" method="post" id="myform" class="login_container" style="width:100%;">
+                     <!-- Honeypot field - ẩn khỏi người dùng thật, bot sẽ điền -->
+                    <div style="position:absolute; left:-9999px; opacity:0;">
+                        <input type="text" name="Website" tabindex="-1" autocomplete="off" />
+                    </div>
+
+                    <!-- Thời gian bắt đầu load form (chống submit < 1 giây) -->
+                    <input type="hidden" name="FormStartTime" value="@formStartTime" />
+
+                    <div class="input-group mb-3">
+                        <div class="input-group-append">
+                            <span class="input-group-text bg-primary"><i class="fas fa-user"></i></span>
+                        </div>
+                        <input autofocus type="text" asp-for="UserName" class="form-control input_user" placeholder="Tài Khoản">
+                    </div>
+                    <div class="input-group mb-2">
+                        <div class="input-group-append">
+                            <span class="input-group-text bg-primary"><i class="fas fa-key"></i></span>
+                        </div>
+                        <input type="password" asp-for="Password" class="form-control input_pass" placeholder="Mật Khẩu">
+                        <div class="input-group-append border-0">
+                            <span class="input-group-text bg-success" id="icon-show-pass"><i class="fas fa-eye-slash"></i></span>
+                        </div>
+                        <input type="hidden" id="token_recaptcha" name="TokenRecaptcha">
+                    </div>
+
+                    <div class="text-danger small" id="MessageErrorLogin">@TempData["MessageError"]</div>
+                </form>
+            </div>
+            <div class="d-flex justify-content-center mt-3 login_container">
+                <button id="send" type="button" name="button" class="btn login_btn">Đăng nhập</button>
+            </div>
+            <div class="mt-5">
+                @if (ItemCoQuan.FolderUpload != "tinhuy")
+                {
+                    <div class="d-flex justify-content-center links small">
+                        Sản phẩm của <a href="https://daklak.vnpt.vn/" target="_blank" style="margin-left:3px"> VNPT Đắk Lắk</a>
+                    </div>
+                }
+                
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<div style="display:none">
+    <div>@Context.Session.GetString("LoginError")</div>
+    <div>@Context.Session.GetString("Login")</div>
+</div>
+@if (useRecaptcha)
+{
+    <script src="https://www.google.com/recaptcha/api.js?render=@recaptchaSiteKey"></script>
+}
+<script>
+    $(document).ready(function () {
+        var useRecaptcha = @useRecaptcha.ToString().ToLower(); // true/false từ Razor
+        var recaptchaTokenReady = false;
+        var recaptchaToken = '';
+
+        // Ban đầu disable nút nếu dùng reCAPTCHA
+        if (useRecaptcha) {
+            $('#send').prop('disabled', true).html('Đang tải xác thực...');
+            $('#send').after('<span id="recaptchaLoading" class="spinner-border spinner-border-sm text-primary ms-2 d-none"></span>');
+        }
+
+        // Load reCAPTCHA nếu bật
+        if (useRecaptcha) {
+            grecaptcha.ready(function () {
+                grecaptcha.execute('@recaptchaSiteKey', { action: 'login' })
+                    .then(function (token) {
+                        recaptchaToken = token;
+                        $('#token_recaptcha').val(token);
+                        recaptchaTokenReady = true;
+
+                        $('#send').prop('disabled', false).html('Đăng nhập');
+                        $('#recaptchaLoading').addClass('d-none');
+                        console.log('reCAPTCHA token ready');
+                    })
+                    .catch(function (error) {
+                        console.error('reCAPTCHA error:', error);
+                        $('#MessageErrorLogin').html('Không thể xác thực reCAPTCHA. Vui lòng tải lại trang.');
+                        $('#send').prop('disabled', true).html('Lỗi xác thực');
+                    });
+            });
+        } else {
+            // Không dùng reCAPTCHA → enable nút ngay
+            $('#send').prop('disabled', false);
+        }
+
+        // Xử lý click nút Đăng nhập
+        $("#send").click(function (e) {
+            e.preventDefault();
+
+            var UserName = $("#UserName").val()?.trim();
+            var Password = $("#Password").val()?.trim();
+
+            if (!UserName) {
+                $("#MessageErrorLogin").html("Tài khoản không được để trống");
+                return;
+            }
+            if (!Password) {
+                $("#MessageErrorLogin").html("Mật khẩu không được để trống");
+                return;
+            }
+
+            // Nếu dùng reCAPTCHA và token chưa sẵn sàng
+            if (useRecaptcha && (!recaptchaTokenReady || !recaptchaToken)) {
+                $("#MessageErrorLogin").html("Đang xác thực, vui lòng chờ 1-2 giây...");
+                $('#recaptchaLoading').removeClass('d-none');
+                return;
+            }
+
+            // Mọi thứ ok → submit form
+            $("#myform").submit();
+        });
+
+        // Enter key submit
+        $('input').keypress(function (e) {
+            if (e.which === 13) {
+                $("#send").click();
+                return false;
+            }
+        });
+
+        // Show/hide password (giữ nguyên)
+        $('#icon-show-pass').on('click', function () {
+            var passInput = $("#Password");
+            if (passInput.attr('type') === 'password') {
+                passInput.attr('type', 'text');
+                $("#icon-show-pass").html('<i class="far fa-eye"></i>');
+            } else {
+                $("#icon-show-pass").html('<i class="fas fa-eye-slash"></i>');
+                passInput.attr('type', 'password');
+            }
+        });
+    });
+</script>

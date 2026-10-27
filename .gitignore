@@ -1,0 +1,16 @@
+# Visual Studio local state and user settings
+.vs/
+*.user
+*.suo
+
+# .NET build output
+[Bb]in/
+[Oo]bj/
+/_build_verify_out/
+
+# Runtime logs
+*.log
+
+# OS metadata
+.DS_Store
+Thumbs.db

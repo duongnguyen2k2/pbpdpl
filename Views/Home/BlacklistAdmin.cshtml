@@ -1,0 +1,99 @@
+@model dynamic
+@{
+    ViewData["Title"] = "Blacklist Admin";
+    Layout = "_Layout";
+}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-lg border-0">
+                <div class="card-header bg-primary text-white text-center py-4">
+                    <h2 class="mb-0"><i class="fas fa-shield-alt"></i> Blacklist Management</h2>
+                    <p class="mb-0 opacity-75">Portal Phường/Xã - Quản trị IP bị chặn</p>
+                </div>
+                <div class="card-body p-5">
+                    @if (ViewBag.Success != null)
+                    {
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            <i class="fas fa-check-circle me-2"></i>@ViewBag.Success
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    }
+                    @if (ViewBag.Error != null)
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <i class="fas fa-exclamation-triangle me-2"></i>@ViewBag.Error
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    }
+                    @if (ViewBag.Info != null)
+                    {
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>@ViewBag.Info
+                        </div>
+                    }
+
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <div class="card h-100 border-primary">
+                                <div class="card-body text-center p-4">
+                                    <i class="fas fa-trash-alt fa-3x text-danger mb-3"></i>
+                                    <h5>Reset Toàn Bộ</h5>
+                                    <p class="text-muted mb-4">Xóa hết tất cả IP bị chặn</p>
+                                    <a href="/Home/ResetBlacklist?secret=@ViewBag.Secret" class="btn btn-danger btn-lg w-100">
+                                        <i class="fas fa-bolt me-2"></i>RESET NGAY
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card h-100 border-success">
+                                <div class="card-body text-center p-4">
+                                    <i class="fas fa-ban fa-3x text-warning mb-3"></i>
+                                    <h5>Thêm IP Block</h5>
+                                    <p class="text-muted mb-3">Chặn IP cụ thể 1 ngày</p>
+                                    <div class="input-group mb-3">
+                                        <input type="text" class="form-control form-control-lg" id="ipInput" placeholder="Nhập IP (ví dụ: 203.0.113.1)" />
+                                        <button class="btn btn-success" onclick="addIp()">
+                                            <i class="fas fa-plus"></i> ADD
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="text-center mt-5">
+                        <a href="/" class="btn btn-outline-secondary btn-lg">
+                            <i class="fas fa-home me-2"></i>Trang chủ
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function addIp() {
+    var ip = document.getElementById('ipInput').value.trim();
+    if (!ip) {
+        alert('Vui lòng nhập IP!');
+        return;
+    }
+    var url = '/Home/AddIp?secret=@ViewBag.Secret&ip=' + encodeURIComponent(ip);
+    window.location.href = url;
+}
+</script>
+
+<style>
+.card {
+    transition: transform 0.2s;
+}
+.card:hover {
+    transform: translateY(-5px);
+}
+.fa-3x {
+    font-size: 3rem;
+}
+</style>

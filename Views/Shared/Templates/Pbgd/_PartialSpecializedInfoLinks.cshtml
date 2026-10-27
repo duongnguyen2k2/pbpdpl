@@ -1,0 +1,59 @@
+@using API.Areas.Admin.Models.DMCoQuan;
+@using API.Areas.Admin.Models.Menus;
+@using Microsoft.AspNetCore.Http;
+@using Newtonsoft.Json;
+@using System.Globalization;
+@{
+    const int SpecializedInfoCatId = 3;
+    int IdCoQuan = int.Parse(Context.Session.GetString("DomainId").ToString());
+    int ParentId = int.Parse(Context.Session.GetString("ParentId").ToString());
+    string Culture = API.Models.MyHelper.StringHelper.ConverLan(CultureInfo.CurrentCulture.Name);
+    string blockTitle = Culture == "en" ? "Specialized Information" : "HỖ TRỢ PHÁP LÝ CHO DOANH NGHIỆP";
+    DMCoQuan ItemCoQuan = JsonConvert.DeserializeObject<DMCoQuan>(Context.Session.GetString("ThongTinCoQuan"));
+
+    string keySession = "MenuSpecialized_" + IdCoQuan + "-" + ParentId + "-" + Culture + "-" + DateTime.Now.ToString("yyyyMMddhh");
+    string strMenu = Context.Session.GetString(keySession);
+    List<Menus> specializedMenus = new List<Menus>();
+
+    if (strMenu != null && strMenu != "" && ItemCoQuan.MetadataCV.FlagSession == 1)
+    {
+        specializedMenus = JsonConvert.DeserializeObject<List<Menus>>(strMenu);
+    }
+    else
+    {
+        specializedMenus = MenusService.GetListByParrent(0, IdCoQuan, SpecializedInfoCatId, ParentId, Culture);
+        if (ItemCoQuan.MetadataCV.FlagSession == 1)
+        {
+            Context.Session.SetString(keySession, JsonConvert.SerializeObject(specializedMenus));
+        }
+        else
+        {
+            Context.Session.Remove(keySession);
+        }
+    }
+}
+
+@if (specializedMenus != null && specializedMenus.Count() > 0)
+{
+    <div class="card border-0 card-style-two" id="specialized-info-links">
+        <div class="card-header">
+            <h3>
+                <span>@blockTitle</span>
+            </h3>
+        </div>
+        <div class="card-body">
+            <ul>
+                @foreach (var menu in specializedMenus.OrderBy(x => x.Ordering ?? int.MaxValue).ThenBy(x => x.Id))
+                {
+                    string itemLink = string.IsNullOrWhiteSpace(menu.Link) ? "#" : menu.Link;
+                    string itemTarget = string.IsNullOrWhiteSpace(menu.Target) ? "_self" : menu.Target;
+                    <li>
+                        <a href="@itemLink" target="@itemTarget" rel="@(itemTarget == "_blank" ? "noopener noreferrer" : null)">
+                            @menu.Title
+                        </a>
+                    </li>
+                }
+            </ul>
+        </div>
+    </div>
+}

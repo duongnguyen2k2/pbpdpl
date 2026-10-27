@@ -1,0 +1,601 @@
+﻿@inject IConfiguration Configuration
+@model API.Areas.Admin.Models.USUsers.USUsersModel
+@using Microsoft.AspNetCore.Http
+@using Microsoft.Extensions.Configuration
+@using Newtonsoft.Json;
+@{
+    Layout = "_layoutAdmin";
+    ViewData["Title"] = "Quản lý Người dùng";
+    string ControllerName = this.ViewContext.RouteData.Values["controller"].ToString();
+    int IdUser = int.Parse(Context.Session.GetString("IdUser"));
+    int IdGroup = int.Parse(Context.Session.GetString("IdGroup"));
+
+     var Login = Context.Session.GetString("Login");
+    API.Areas.Admin.Models.USUsers.USUsersLogin MyInfo = JsonConvert.DeserializeObject<API.Areas.Admin.Models.USUsers.USUsersLogin>(Login);
+
+}
+
+<div class="card">
+    <div class="card-header">
+
+        <h4><i class="fas fa-users"></i> @ViewData["Title"]</h4>
+    </div>
+    <div class="card-body">
+        <partial name="_PartialMsgInfoAdmin" />
+        <form asp-controller="@ControllerName" asp-action="Index" method="get" id="MySearchForm">
+            <div class="row">
+                <div class="col-lg-3">
+                    <input asp-for="SearchData.Keyword" name="Keyword" placeholder="Tìm kiếm" class="form-control" />
+                </div>
+                <div class="col-lg-6">
+                    <div class="form-row align-items-center">
+                        <div class="col-auto">
+                            <div class="form-group">
+                                <select asp-for="SearchData.IdCoQuan" name="IdCoQuan" class="form-control" asp-items="Model.ListDMCoQuan"></select>
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <div class="form-group">
+                                <select asp-for="SearchData.IdGroup" name="IdGroup" class="form-control" asp-items="Model.ListItemsGroups"></select>
+                            </div>
+                        </div>
+                        
+                        <div class="col-auto">
+                            <div class="form-group"><button type="submit" class="btn btn-primary">Tìm Kiếm</button>  </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <div class="col-lg-3">                    
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-primary" data-toggle="tooltip" data-placement="top" title="Tìm kiếm"><i class="fas fa-search"></i></button>
+                        <button data-toggle="modal" data-target="#LoaddingModal" data-whatever="Đang tải dữ liệu. Xin vui lòng đợi." id="ExportExcel" type="button" class="btn btn-info"><i class="far fa-file-excel"></i></button>
+                        @if (IdGroup == 1)
+                        {
+                            <a href="/Admin/ImportExcel/ImportUsers" data-toggle="tooltip" data-placement="top" title="Đỗ dữ liệu Excel" class="btn btn-info"><i class="fas fa-file-import"></i></a>
+                        }
+                    </div>
+                </div>
+
+            </div>
+        </form>
+        <div class="row">
+
+            <div class="col-lg-12">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-striped table-hover ">
+                        <thead>
+                            <tr>
+                                <th width="50px" class="text-center">STT</th>
+                                <th width="90px">Avatar</th>
+                                <th>Tài khoản</th>
+                                <th width="200px">Tên</th>
+                                <th width="50px"></th>
+                                <th width="200px">Cơ Quan</th>
+                                <th width="100px">Trạng Thái</th>
+                                <th width="80px">Đảng Viên</th>
+                                <th>Quyền Hạn</th>
+                                <th>Dân Tộc</th>
+                                <th>Tôn Giáo</th>
+                                <th>Trình độ</th>
+                                <th width="100px" class="text-center text-info" data-toggle="tooltip" data-placement="top" title="Mật khẩu mặc định là: Abc@123">Mật Khẩu</th>
+                                <th width="170px" class="btn-contain">
+                                    <a asp-controller="@ControllerName" asp-action="SaveItem" class="btn btn-primary">THÊM MỚI</a>
+                                </th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            @if (Model.ListItems == null || Model.ListItems.Count() == 0)
+                            {
+                                <tr>
+                                    <td colspan="14" class="text-center">
+                                        <label>Không có dữ liệu!</label>
+                                    </td>
+                                </tr>
+                            }
+                            else
+                            {
+                                for (int i = 0; i < Model.ListItems.Count(); i++)
+                                {
+                                    @if (Model.ListItems[i].Id > 1)
+                                    {
+                                        <tr>
+                                            <td width="50px" class="text-center">@Model.ListItems[i].Ordering</td>
+                                            <td>
+                                                @if(Model.ListItems[i].Avatar != null && Model.ListItems[i].Avatar!="")
+                                                {
+                                                    <img src="@Model.ListItems[i].Avatar" style="width: 70px"/>
+                                                }
+                                                else { 
+                                                    <img src="@("/images/no-avatar_"+Model.ListItems[i].Gender+".png")" style="width: 70px" />
+                                                }
+                                            </td>
+                                            <td>@Model.ListItems[i].UserName
+                                                @if (Model.ListItems[i].IdPhongBan > 0)
+                                                {
+                                                    <br /> <span>@Model.ListItems[i].TitlePhongBan</span>
+                                                }
+                                            </td>
+                                            <td>@Model.ListItems[i].FullName</td>
+                                            <td class="text-center">
+                                                @if (Model.ListItems[i].Gender == 1)
+                                                {
+                                                    <i class="fas fa-female text-danger"></i>
+                                                }
+                                                else if (Model.ListItems[i].Gender == 2)
+                                                {
+                                                    <i class="fas fa-mars text-info"></i>
+                                                }
+                                            </td>
+                                            <td>@Model.ListItems[i].TenCoQuan</td>
+                                            <td class="text-center">
+                                                @if (@Model.ListItems[i].Status == 1)
+                                                {
+                                                    <a onclick="UpdateStatus('@ControllerName','@Model.ListItems[i].Ids',0)" class="fas fa-check-circle text-primary" aria-hidden="true"></a>
+                                                }
+                                                else
+                                                {
+                                                    <a onclick="UpdateStatus('@ControllerName','@Model.ListItems[i].Ids',1)" class="fas fa-lock text-danger" aria-hidden="false"></a>
+                                                }
+                                            </td>
+                                            <td class="text-center">
+                                                @if (@Model.ListItems[i].DangVien==1)
+                                                {
+                                                    <a onclick="UpdateStatus('@ControllerName','@Model.ListItems[i].Ids',0,'DangVien')"  class="fas fa-check-circle text-primary" aria-hidden="true"></a>
+                                                }
+                                                else
+                                                {
+                                                    <a onclick="UpdateStatus('@ControllerName','@Model.ListItems[i].Ids',1,'DangVien')" class="far fa-times-circle text-danger" aria-hidden="false"></a>
+                                                }
+                                            </td>
+                                            <td>@Model.ListItems[i].GroupsTitle</td>
+                                            <td>@Model.ListItems[i].TenDanToc</td>
+                                            <td>@Model.ListItems[i].TenTonGiao</td>
+                                            <td>@Model.ListItems[i].TenTrinhDo</td>
+                                            <td>
+                                                <ul class="list-inline action">
+                                                    <li class="list-inline-item"><a data-toggle="modal" data-target="#RessetPasswordModal" data-whatever="@Model.ListItems[i].UserName" data-ids="@Model.ListItems[i].Ids"><i class="fas fa-unlock-alt"></i> Phục hồi</a></li>
+                                                </ul>
+                                            </td>
+                                            <td>
+                                                <ul class="list-inline action">
+                                                    <li class="list-inline-item"><a asp-controller="@ControllerName" asp-action="SaveItem" asp-route-id="@Model.ListItems[i].Ids"><i class="fa fa-edit"></i>Sửa</a></li>
+                                                    @if (MyInfo.MasterId == 1)
+                                                    {
+                                                        <li class="list-inline-item"><a href="/Admin/Account/LoginMaster?Username=@Model.ListItems[i].UserName"><i class="fas fa-sign-in-alt"></i>Login</a></li>
+                                                    }
+                                                    @*Add by Tayd*@
+                                                    @if (Configuration.GetValue<string>("flagUserCategoryAccess") == "1")
+                                                    {
+                                                        <li class="list-inline-item">
+                                                            <a href="#" data-toggle="modal" data-target="#PermissionModal" data-userid="@Model.ListItems[i].Id" data-username="@Model.ListItems[i].UserName" data-fullname="@Model.ListItems[i].FullName">
+                                                                <i class="fas fa-sign-in-alt"></i>Phân quyền bài viết
+                                                            </a>
+                                                        </li>
+                                                    }
+                                                    @* End Add by Tayd*@
+
+                                                    @if (IdUser != Model.ListItems[i].Id)
+                                                    {
+                                                        <li class="list-inline-item">
+                                                            <a data-toggle="modal" data-target="#DeleteModal" data-whatever="@Model.ListItems[i].UserName" data-ids="@Model.ListItems[i].Ids">
+                                                                <i class="fa fa-trash"></i> Xóa
+                                                            </a>
+                                                        </li>
+                                                    }
+                                                </ul>
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                            }
+
+                        </tbody>
+                    </table>
+                </div>
+                <form asp-controller="@ControllerName" asp-action="DeleteItem" id="AjaxDeleteForm"></form>
+            </div>
+            <div class="col-lg-12">
+                @await Html.PartialAsync("_PartialPagination", Model.Pagination)
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="modal fade" id="RessetPasswordModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-body text-center">
+                <p id="reset-title">Bạn có chắc chắn thiết lập lại mật khẩu ?</p>
+                <button class="btn btn-warning" data-ids="" id="ResetPasswordItemTrue">Cập nhật mật khẩu</button>
+                <button class="btn btn-danger" data-dismiss="modal">Hủy</button>
+            </div>
+        </div>
+    </div>
+</div>
+@*Add by Tayd*@
+<!-- Modal mới cho Phân quyền DM -->
+<div class="modal fade" id="PermissionModal" tabindex="-1" role="dialog" aria-labelledby="PermissionModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" style="min-height: 100vh; margin: 0 auto; max-width: 68%; width: 68%;" role="document">
+        <div class="modal-content" style="height: 100vh; border-radius: 0;">
+            <div class="modal-header" style="height: 55px; flex-shrink: 0;">
+                <h5 class="modal-title" id="PermissionModalLabel">Phân quyền chuyên mục</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" style="height: calc(100vh - 55px - 50px); overflow-y: auto; padding: 1rem;">
+                <div class="row" style="height: 30px;">
+                
+                <div class="col-md-12" style="height: 100%; padding-right: 55px;">
+                    <h6><strong>Thông tin User: </strong> <span id="selectedUsername"></span> - <span id="selectedFullname"></span></h6>
+                    <span id="selectedUserId" style="display: none;"></span>  <!-- Dòng hidden chứa UserID để jQuery lấy text() -->
+                    
+                </div>
+            </div>
+
+            <div class="row" style="height: 100%;">
+                    <!-- Cột phải: Danh sách chuyên mục với checkbox -->
+                    <div class="col-md-12" style="height: 100%; padding-left: 0;">
+                        
+                        <div id="categoriesList" class="list-group" style="max-height: calc(100% - 2rem - 90px); overflow-y: auto;">  <!-- Điều chỉnh height trừ checkbox (~40px) -->
+                         <!-- Nội dung sẽ được load động qua AJAX -->
+                            <p class="text-muted">Đang tải danh sách chuyên mục...</p>
+                        </div>
+                        <div class="mt-3" style="height: 50px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
+                            <button type="button" class="btn btn-success mr-2" id="savePermissionsBtn">Lưu phân quyền</button>
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Đóng</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@*End Add by Tayd*@
+@section Scripts{
+    <script>
+    jQuery('#RessetPasswordModal').on('show.bs.modal', function (event) {
+        var button = jQuery(event.relatedTarget); // Button that triggered the modal
+        var recipient = button.data('whatever'); // Extract info from data-* attributes
+        var ids = button.data('ids');
+        var modal = jQuery(this);
+        jQuery("#ResetPasswordItemTrue").attr("data-ids", ids);
+        modal.find('#reset-title').html('Bạn có chắc chắn thiết lập lại mật khẩu <strong>' + recipient + '</strong>?')
+    });
+
+    jQuery('#RessetPasswordModal').on('hide.bs.modal', function (event) {
+        console.log("hide.bs.modal");
+        $('#reset-title').html('Bạn có chắc chắn thiết lập lại mật khẩu ?')
+    });
+
+
+
+$("#ResetPasswordItemTrue").click(function () {
+    //var url = "/Admin/@ControllerName/";
+    var form = $('#AjaxDeleteForm');
+    var token = jQuery('input[name="__RequestVerificationToken"]', form).val();
+    var ids = jQuery("#ResetPasswordItemTrue").attr("data-ids");
+    var url = "/Admin/USUsers/RessetPassword?Id="+ids;
+    var headers = {};
+    headers["RequestVerificationToken"] = token;
+    return $.ajax({
+        type: "POST",
+        url: url,
+        headers: headers,
+        data: JSON.stringify({ "Ids": ids }),
+        contentType: "application/json; charset=utf-8",
+        dataType: "json",
+        success: function (data) {
+            $("#reset-title").html(data.Msg);
+            console.log(data);
+            //window.location.reload();
+        },
+        error: function () {
+            $("#reset-title").html(data.Msg);
+        }
+    });
+});
+    @*Add by Tayd*@
+
+    // Script mới cho Modal Phân quyền DM
+    jQuery('#PermissionModal').on('show.bs.modal', function (event) {
+        var button = jQuery(event.relatedTarget);
+        var userId = button.data('userid');
+        var username = button.data('username');
+        var fullname = button.data('fullname');
+        
+        // Set thông tin user ở cột trái
+        jQuery('#selectedUserId').text(userId);
+        jQuery('#selectedUsername').text(username);
+        jQuery('#selectedFullname').text(fullname);
+
+        // Load danh sách chuyên mục với checked status qua AJAX và build cây phân cấp
+        // Giả sử endpoint: /Admin/USUsers/GetCategoriesForUser?userId={userId} trả về JSON: { categories: [{id:1, name:'Chuyên mục 1', Status: true, parentId:0}, ...] }
+                // Load danh sách chuyên mục với checked status qua AJAX và build cây phân cấp
+        // Giả sử endpoint: /Admin/USUsers/GetCategoriesForUser?userId={userId} trả về JSON: { categories: [{id:1, name:'Chuyên mục 1', Status: true, parentId:0}, ...] }
+        jQuery.ajax({
+            type: "GET",
+            url: `/Admin/USUsers/GetCategoriesForUser?userId=${userId}`,
+            dataType: "json",
+            success: function (data) {
+                var categoriesHtml = '';
+                if (data && data.categories && data.categories.length > 0) {
+                    // Build tree structure và lưu data cho cascade (mở rộng cho 3 roles)
+                    var treeData = buildCategoryTreeData(data.categories);  // Trả về { roots, nodeMap }
+                    var treeHtml = buildCategoryTreeHtml(treeData.roots);  // Render HTML từ roots với 3 role columns
+                    categoriesHtml = treeHtml || '<p class="text-muted">Không có chuyên mục nào.</p>';
+            
+                    // Lưu tree data global để dùng cho cascade và select all per role
+                    window.currentCategoryTree = treeData;
+                } else {
+                    categoriesHtml = '<p class="text-muted">Không có chuyên mục nào.</p>';
+                }
+                jQuery('#categoriesList').html(categoriesHtml);
+        
+                // Attach event listeners sau khi render (mở rộng cho 3 roles)
+                attachCategoryEvents();
+            },
+            error: function () {
+                jQuery('#categoriesList').html('<p class="text-danger">Lỗi khi tải danh sách chuyên mục.</p>');
+            }
+        });
+
+        // Function để build tree data (roots và nodeMap) từ flat list (giữ nguyên, nhưng data có role1/2/3Checked)
+        function buildCategoryTreeData(categories) {
+            // Tạo map cho quick lookup children
+            var nodeMap = {};
+            categories.forEach(function(cat) {
+                nodeMap[cat.id] = { ...cat, children: [] };
+            });
+
+            // Build tree: Tìm roots và attach children
+            var roots = [];
+            categories.forEach(function(cat) {
+                var node = nodeMap[cat.id];
+                if (node.parentId === 0 || node.parentId === null || node.parentId === undefined) {
+                    roots.push(node);
+                } else {
+                    var parent = nodeMap[node.parentId];
+                    if (parent) {
+                        parent.children.push(node);
+                    }
+                }
+            });
+
+            return { roots: roots, nodeMap: nodeMap };
+        }
+
+        // Function để render HTML tree dưới dạng table từ roots (cải tiến với 3 role columns)
+        function buildCategoryTreeHtml(roots) {
+            // Recursive function để render table row cho node với 3 role checkboxes
+            function renderNodeRow(node, depth = 0) {
+                var indent = '&nbsp;'.repeat(depth * 4);  // Indentation bằng spaces cho hierarchy
+                var rowClass = (depth % 2 === 0) ? '' : 'table-active';  // Xen kẽ màu nhạt
+                var checked1 = node.role1Checked ? 'checked' : '';  // Đăng bài (value=1)
+                var checked2 = node.role2Checked ? 'checked' : '';  // Điều chỉnh (value=2)
+                var checked3 = node.role3Checked ? 'checked' : '';  // Duyệt bài (value=3)
+                var html = `
+                    <tr class="${rowClass}">
+                        <td width="50px" class="text-center" style="padding-left: ${depth * 20}px;">
+                            <span>${indent}${node.name}</span>
+                        </td>
+                        <td width="80px" class="text-center">
+                            <input type="checkbox" class="role1-checkbox category-checkbox" value="${node.id}|1" id="cat_${node.id}_1" ${checked1} data-role="1">
+                        </td>
+                        <td width="80px" class="text-center">
+                            <input type="checkbox" class="role2-checkbox category-checkbox" value="${node.id}|2" id="cat_${node.id}_2" ${checked2} data-role="2">
+                        </td>
+                        <td width="80px" class="text-center">
+                            <input type="checkbox" class="role3-checkbox category-checkbox" value="${node.id}|3" id="cat_${node.id}_3" ${checked3} data-role="3">
+                        </td>
+                    </tr>
+                `;
+
+                // Recursive children nếu có (flat rows với indent tăng)
+                if (node.children && node.children.length > 0) {
+                    node.children.forEach(function(child) {
+                        html += renderNodeRow(child, depth + 1);
+                    });
+                }
+
+                return html;
+            }
+
+            // Render header với 3 select all checkboxes
+            var headerHtml = `
+                <table id="dsChucNang" class="table table-bordered table-striped table-hover mb-0">
+                    <thead>
+                        
+                        <tr>
+                <th width="50px">Chuyên mục</th>  
+                <th width="80px" class="text-center text-nowrap" title="Quyền đăng bài mới (cơ bản)">
+                    <input type="checkbox" id="selectAllRole1" class="select-all-role" data-role="1"> Đăng bài viết
+                     <br/> (create)
+                </th>
+                <th width="80px" class="text-center text-nowrap" title="Quyền chỉnh sửa bài viết">
+                    <input type="checkbox" id="selectAllRole2" class="select-all-role" data-role="2"> Chỉnh sửa bài
+                    <br/> (create/ edit)
+                </th>
+                <th width="80px" class="text-center text-nowrap" title="Quyền duyệt bài (bao gồm đăng & chỉnh)">
+                    <input type="checkbox" id="selectAllRole3" class="select-all-role" data-role="3"> Duyệt bài
+                    <br/> (full role)
+                </th>
+            </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            // Render rows từ roots
+            var rowsHtml = '';
+            if (roots.length > 0) {
+                roots.forEach(function(root) {
+                    rowsHtml += renderNodeRow(root, 0);
+                });
+            }
+
+            var footerHtml = '</tbody></table>';
+
+            return headerHtml + rowsHtml + footerHtml;
+        }
+
+        // Function để attach events cho checkboxes (mở rộng cascade và select all per role)
+        function attachCategoryEvents() {
+            // Event delegation cho cascade check per role
+            jQuery('#categoriesList').on('change', '.category-checkbox', function() {
+                var $checkbox = jQuery(this);
+                var parts = $checkbox.val().split('|');
+                var nodeId = parseInt(parts[0]);
+                var role = parseInt(parts[1]);
+                var isChecked = $checkbox.is(':checked');
+        
+                if (window.currentCategoryTree && window.currentCategoryTree.nodeMap[nodeId]) {
+                    cascadeCheckPerRole(nodeId, role, isChecked);
+                }
+            });
+    
+            // Event cho 3 select all checkboxes per role
+            jQuery('.select-all-role').off('change').on('change', function() {
+                var role = parseInt(jQuery(this).data('role'));
+                var isChecked = jQuery(this).is(':checked');
+        
+                // Traverse toàn bộ tree để set check cho role cụ thể
+                if (window.currentCategoryTree) {
+                    traverseTreeAndCheckPerRole(window.currentCategoryTree.roots, role, isChecked);
+                }
+            });
+        }
+
+        // Recursive cascade check per role: Set check cho role cụ thể của node và tất cả children
+        function cascadeCheckPerRole(nodeId, role, checked) {
+            var nodeMap = window.currentCategoryTree.nodeMap;
+    
+            // Function recursive để set check DOM và data per role
+            function setNodeAndChildrenPerRole(node, roleNum, checkState) {
+                // Update DOM checkbox cho role
+                jQuery(`#cat_${node.id}_${roleNum}`).prop('checked', checkState);
+        
+                // Update data (e.g., node[`role${roleNum}Checked`] = checkState)
+                node[`role${roleNum}Checked`] = checkState;
+        
+                // Recursive children
+                if (node.children && node.children.length > 0) {
+                    node.children.forEach(function(child) {
+                        setNodeAndChildrenPerRole(child, roleNum, checkState);
+                    });
+                }
+            }
+    
+            if (nodeMap[nodeId]) {
+                setNodeAndChildrenPerRole(nodeMap[nodeId], role, checked);
+            }
+        }
+
+        // Traverse toàn bộ tree để check/uncheck tất cả nodes cho role cụ thể
+        function traverseTreeAndCheckPerRole(nodes, role, checked) {
+            nodes.forEach(function(node) {
+                cascadeCheckPerRole(node.id, role, checked);
+            });
+        }
+       
+    });
+
+    // Xử lý lưu phân quyền (cải tiến cho 3 roles)
+jQuery('#savePermissionsBtn').click(function () {
+    var userId = parseInt(jQuery('#selectedUserId').text());  // Parse to int
+    var permissions = {};  // {id: maxRole}
+    
+    // Thu thập checked checkboxes per role
+    jQuery('.category-checkbox:checked').each(function() {
+        var parts = jQuery(this).val().split('|');
+        var id = parseInt(parts[0]);
+        var role = parseInt(parts[1]);
+        if (!permissions[id] || permissions[id] < role) {
+            permissions[id] = role;  // Lấy max role per id (cumulative)
+        }
+    });
+    
+    // Build JSON {1:3, 2:1, ...}
+    var categoryJson = JSON.stringify(permissions);
+    
+    var form = $('#AjaxDeleteForm');
+    var token = jQuery('input[name="__RequestVerificationToken"]', form).val();
+    var headers = {};
+    headers["RequestVerificationToken"] = token;
+    
+    jQuery.ajax({
+        type: "POST",
+        url: `/Admin/USUsers/SaveUserCategoryPermissions`,
+        headers: headers,
+        data: JSON.stringify({ 
+            UserId: userId,
+            CategoryList: categoryJson 
+        }),
+        contentType: "application/json; charset=utf-8",
+        dataType: "json",
+        success: function (data) {
+            if (data.success) {
+                alert(data.message || 'Lưu phân quyền thành công!');
+                jQuery('#PermissionModal').modal('hide');
+                // Reload nếu cần
+            } else {
+                alert(data.message || 'Lưu thất bại.');
+            }
+        },
+        error: function (xhr, status, error) {
+            var errorMsg = 'Lỗi khi lưu phân quyền.';
+            if (xhr.responseJSON && xhr.responseJSON.error) {
+                errorMsg = xhr.responseJSON.error;
+            }
+            alert(errorMsg);
+        }
+    });
+});
+
+    // Xử lý lưu phân quyền
+    // jQuery('#savePermissionsBtn').click(function () {
+    //     var userId = jQuery('#selectedUserId').text();
+    //     var selectedCategories = [];
+    //     jQuery('.category-checkbox:checked').each(function() {
+    //         selectedCategories.push(parseInt(jQuery(this).val()));
+    //     });
+        
+    //     Gửi AJAX để lưu (giả sử endpoint lưu CategoryList dưới dạng JSON {1:1, 2:1}...)
+    //     var categoryJson = JSON.stringify(selectedCategories.reduce((acc, id) => { acc[id] = 1; return acc; }, {}));
+        
+    //     var form = $('#AjaxDeleteForm');  Reuse form for token
+    //     var token = jQuery('input[name="__RequestVerificationToken"]', form).val();
+    //     var headers = {};
+    //     headers["RequestVerificationToken"] = token;
+        
+    //     jQuery.ajax({
+    //     type: "POST",
+    //     url: `/Admin/USUsers/SaveUserCategoryPermissions`,  Loại bỏ query string, gửi userId trong body
+    //     headers: headers,
+    //     data: JSON.stringify({ 
+    //         UserId: userId,  Thêm UserId vào body JSON để bind vào model
+    //         CategoryList: categoryJson 
+    //     }),
+    //     contentType: "application/json; charset=utf-8",
+    //     dataType: "json",
+    //     success: function (data) {
+    //         alert('Lưu phân quyền thành công!');  Hoặc hiển thị toast
+    //         jQuery('#PermissionModal').modal('hide');
+    //         Reload page nếu cần: location.reload();
+    //     },
+    //     error: function (xhr, status, error) {
+    //         Cải tiến: Hiển thị lỗi chi tiết hơn từ response
+    //         var errorMsg = 'Lỗi khi lưu phân quyền.';
+    //         if (xhr.responseJSON && xhr.responseJSON.error) {
+    //             errorMsg = xhr.responseJSON.error;
+    //         }
+    //         alert(errorMsg);
+    //     }
+    // });
+// });
+    </script>
+}
